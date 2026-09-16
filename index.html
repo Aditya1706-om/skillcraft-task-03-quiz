@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz Master — Interactive Tech Quiz Game | Om Aditya</title>
+    <meta name="description" content="Test your web development and computer science knowledge with Quiz Master - an interactive, gamified quiz application with streak combos, timers, audio effects, and detailed reviews.">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🧠</text></svg>">
+
+    <!-- Stylesheet -->
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <!-- Ambient Glowing Orbs Background -->
+    <div class="ambient-glow-wrapper" aria-hidden="true">
+        <div class="glow-orb glow-orb-1"></div>
+        <div class="glow-orb glow-orb-2"></div>
+        <div class="glow-orb glow-orb-3"></div>
+    </div>
+    <div class="bg-grid-overlay" aria-hidden="true"></div>
+
+    <!-- Canvas for Confetti particle effects -->
+    <canvas id="confetti-canvas"></canvas>
+
+    <!-- Toast Notification for clipboard copying -->
+    <div id="toast-msg" class="toast-msg" role="status" aria-live="polite">
+        <span>📋</span>
+        <span id="toast-text">Scorecard copied to clipboard!</span>
+    </div>
+
+    <!-- ==========================================================================
+         MAIN APP CONTAINER
+         ========================================================================== -->
+    <main class="quiz-container">
+
+        <!-- App Top Bar (Global Controls) -->
+        <header class="app-topbar">
+            <div class="app-brand">
+                <span class="brand-icon">🧠</span>
+                <span>QuizMaster</span>
+            </div>
+            <div class="topbar-actions">
+                <button id="sound-toggle-btn" class="icon-btn active" title="Toggle Sound (Muted / Active)">
+                    <span id="sound-icon">🔊</span>
+                    <span id="sound-text">Sound</span>
+                </button>
+                <button id="leaderboard-btn" class="icon-btn" title="View High Scores & Stats">
+                    <span>🏆</span>
+                    <span>Scores</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- ==========================================================================
+             SCREEN 1: START SCREEN
+             ========================================================================== -->
+        <section id="start-screen" class="screen active">
+
+            <div class="hero-badge-wrap">
+                <span class="pulse-dot"></span>
+                <span>SkillCraft Technology — Task 03</span>
+            </div>
+
+            <h1 class="hero-title">Master Tech Skills</h1>
+
+            <p class="hero-subtitle">
+                Challenge yourself with curated interactive questions, beat the countdown timer, and build massive streak multipliers.
+            </p>
+
+            <!-- Quick Player Stats Overview -->
+            <div class="quick-stats-bar">
+                <span>Total Quizzes: <strong id="stat-total-games">0</strong></span>
+                <span>•</span>
+                <span>Best Score: <strong id="stat-best-score">0%</strong></span>
+                <span>•</span>
+                <span>Max Streak: <strong id="stat-max-streak">0🔥</strong></span>
+            </div>
+
+            <!-- Category Selection -->
+            <div class="config-section">
+                <div class="config-title">
+                    <span>📂</span> Select Category
+                </div>
+                <div class="category-grid" id="category-picker">
+                    <div class="category-card selected" data-category="frontend">
+                        <span class="category-icon">🎨</span>
+                        <span class="category-name">Frontend & Web</span>
+                        <span class="category-count">HTML • CSS • DOM</span>
+                    </div>
+                    <div class="category-card" data-category="javascript">
+                        <span class="category-icon">⚡</span>
+                        <span class="category-name">JavaScript Core</span>
+                        <span class="category-count">ES6 • Logic • Async</span>
+                    </div>
+                    <div class="category-card" data-category="trivia">
+                        <span class="category-icon">🌐</span>
+                        <span class="category-name">Tech & CS Trivia</span>
+                        <span class="category-count">Networks • History • CS</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Game Mode Selector -->
+            <div class="config-section">
+                <div class="config-title">
+                    <span>⏱️</span> Select Game Mode
+                </div>
+                <div class="mode-selectors">
+                    <button type="button" class="mode-btn selected" data-mode="blitz">
+                        <span class="mode-icon">⚡</span>
+                        <div>
+                            <span class="mode-title">Speed Blitz</span>
+                            <span class="mode-desc">15s countdown timer per question</span>
+                        </div>
+                    </button>
+                    <button type="button" class="mode-btn" data-mode="casual">
+                        <span class="mode-icon">☕</span>
+                        <div>
+                            <span class="mode-title">Relaxed Mode</span>
+                            <span class="mode-desc">No timer pressure, learn at your pace</span>
+                        </div>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Start Action -->
+            <button id="start-btn" class="primary-btn">
+                <span>Start Challenge</span>
+                <span class="kbd-hint">↵ Enter</span>
+            </button>
+
+        </section>
+
+        <!-- ==========================================================================
+             SCREEN 2: QUIZ SCREEN
+             ========================================================================== -->
+        <section id="quiz-screen" class="screen">
+
+            <!-- HUD (Category, Counter, Streak, Score) -->
+            <div class="quiz-hud">
+                <div class="hud-left">
+                    <span id="hud-category-tag" class="category-tag">Frontend & Web</span>
+                    <span class="q-counter">
+                        Question <strong id="question-number">1</strong> / <span id="total-questions">10</span>
+                    </span>
+                </div>
+                <div class="hud-right">
+                    <div id="streak-pill" class="streak-badge">
+                        <span>🔥</span>
+                        <span id="streak-count">0</span>
+                    </div>
+                    <div class="live-score">
+                        <span>⚡</span>
+                        <span id="score-display">0</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Progress Track & Countdown Timer -->
+            <div class="progress-timer-wrapper">
+                <div class="progress-track" title="Quiz Progress">
+                    <div id="progress-bar" class="progress-bar-fill"></div>
+                </div>
+                <div id="timer-wrapper" class="timer-container">
+                    <span>Time Left</span>
+                    <div class="timer-track">
+                        <div id="timer-bar" class="timer-bar-fill"></div>
+                    </div>
+                    <span id="timer-text" class="timer-text">15s</span>
+                </div>
+            </div>
+
+            <!-- Question Text Card -->
+            <div class="question-card">
+                <h2 id="question" class="question-text">
+                    Loading question...
+                </h2>
+            </div>
+
+            <!-- Options Grid (A, B, C, D) -->
+            <div id="options" class="options-grid">
+                <!-- Dynamically generated buttons -->
+            </div>
+
+            <!-- Educational Explanation Box -->
+            <div id="explanation-box" class="explanation-box">
+                <span class="explanation-icon">💡</span>
+                <div class="explanation-content">
+                    <h4>Why this is correct</h4>
+                    <p id="explanation-text">Explanation content here.</p>
+                </div>
+            </div>
+
+            <!-- Quiz Navigation & Keyboard Shortcuts Guide -->
+            <div class="quiz-footer">
+                <div class="keyboard-shortcuts-guide">
+                    <span>Keys:</span>
+                    <kbd>1</kbd><kbd>2</kbd><kbd>3</kbd><kbd>4</kbd>
+                    <span>to select •</span>
+                    <kbd>Enter</kbd>
+                    <span>next</span>
+                </div>
+                <button id="next-btn" class="primary-btn" disabled>
+                    <span>Next Question</span>
+                    <span class="kbd-hint">↵</span>
+                </button>
+            </div>
+
+        </section>
+
+        <!-- ==========================================================================
+             SCREEN 3: RESULT SCREEN
+             ========================================================================== -->
+        <section id="result-screen" class="screen">
+
+            <div id="result-badge-icon" class="result-header-badge">
+                🏆
+            </div>
+
+            <h2 id="result-rank" class="result-rank-title">Master Developer!</h2>
+
+            <p id="result-message" class="result-feedback">
+                Outstanding performance! You breezed through the challenge.
+            </p>
+
+            <!-- Final Score Ring -->
+            <div class="final-score-display">
+                <div class="score-number">
+                    <span id="final-score">0</span>
+                </div>
+                <div class="score-max">
+                    points scored (<span id="correct-count">0</span>/<span id="result-total-q">10</span> correct)
+                </div>
+            </div>
+
+            <!-- Detailed Metrics Grid -->
+            <div class="metrics-grid">
+                <div class="metric-card metric-correct">
+                    <span id="metric-correct-val" class="metric-value">0</span>
+                    <span class="metric-label">Correct</span>
+                </div>
+                <div class="metric-card metric-wrong">
+                    <span id="metric-wrong-val" class="metric-value">0</span>
+                    <span class="metric-label">Mistakes</span>
+                </div>
+                <div class="metric-card metric-streak">
+                    <span id="metric-streak-val" class="metric-value">0🔥</span>
+                    <span class="metric-label">Best Streak</span>
+                </div>
+                <div class="metric-card metric-accuracy">
+                    <span id="metric-accuracy-val" class="metric-value">0%</span>
+                    <span class="metric-label">Accuracy</span>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="result-actions">
+                <button id="restart-btn" class="primary-btn">
+                    <span>Play Again</span>
+                    <span class="kbd-hint">↵</span>
+                </button>
+                <button id="share-btn" class="secondary-btn">
+                    <span>📋 Share Scorecard</span>
+                </button>
+            </div>
+
+            <!-- Answers Review Accordion -->
+            <div class="review-container">
+                <button id="review-toggle-btn" class="review-toggle-btn" type="button">
+                    <span>🔍 Review Question Explanations</span>
+                    <span id="review-chevron">▼</span>
+                </button>
+                <div id="review-list" class="review-list" style="display: none;">
+                    <!-- Dynamically populated review items -->
+                </div>
+            </div>
+
+        </section>
+
+        <!-- Footer Credits -->
+        <footer>
+            <span>Designed &amp; Developed with 💙 by</span>
+            <strong>Om Aditya</strong>
+            <span>• SkillCraft Task 03</span>
+        </footer>
+
+    </main>
+
+    <!-- ==========================================================================
+         HIGH SCORES / LEADERBOARD MODAL
+         ========================================================================== -->
+    <div id="leaderboard-modal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+        <div class="modal-box">
+            <div class="modal-header">
+                <div id="modal-title" class="modal-title">
+                    <span>🏆</span> High Scores &amp; History
+                </div>
+                <button id="close-modal-btn" class="modal-close-btn" title="Close modal">&times;</button>
+            </div>
+            <div id="leaderboard-list" class="leaderboard-list">
+                <!-- Dynamically populated from localStorage -->
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <button id="clear-scores-btn" class="secondary-btn" style="padding: 8px 16px; font-size: 12px;">
+                    Clear History
+                </button>
+                <button id="modal-done-btn" class="primary-btn" style="padding: 8px 24px; font-size: 13px;">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript Application Engine -->
+    <script src="script.js"></script>
+</body>
+
+</html>
